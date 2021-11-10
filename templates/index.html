@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link href="/static/bulma.min.css"  rel="stylesheet">
+
+        <script type="text/javascript" src="/static/brython.js"></script>
+        <script type="text/javascript" src="/static/brython_stdlib.js"></script>
+
+        <title>crea examenes</title>
+    </head>
+
+    <body onload="brython()">
+        <section class="section">
+
+            <div class="container">
+                <h1 class="title">Crea examenes</h1>
+
+                <p class="mb-2">Esta es una herramienta desarrollada para profesores, partiendo de la <a href="https://lacienciaparatodos.wordpress.com/2021/11/09/programa-para-desordenar-examenes-tipo-test/">herramienta</a> de <a href="https://twitter.com/javierfpanadero">Javier Fernández Panadero</a>, pero desplegada en web para que sea más fácil de usar para todo tipo de usuarios.</p>
+
+                <p class="mb-5">Creado por <a href="https://twitter.com/episuarez">episuarez</a>. ¡Espero que os sea útil!</p>
+
+                <div class="buttons">
+                    <button id="generar_examen" class="button is-primary">Generar examen</button>
+                </div>
+
+                <div class="notification is-danger is-hidden" id="aviso"></div>
+
+                <div class="columns">
+                    <div class="column">
+                        <textarea id="datos" class="textarea has-fixed-size is-primary" placeholder="Pregunta&#10;Respuesta correcta&#10;Respuesta incorrecta&#10;Respuesta incorrecta&#10;&#10;Pregunta&#10;Respuesta correcta&#10;Respuesta incorrecta&#10;Respuesta incorrecta&#10;Respuesta incorrecta&#10;&#10;Pregunta&#10;Respuesta correcta&#10;Respuesta incorrecta" rows="25"></textarea>
+                    </div>
+                    <div class="column">
+                        <textarea id="resultado" class="textarea has-fixed-size is-info" rows="25"></textarea>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <script type="text/python">
+            from browser import document
+            import random
+            import string
+            
+            class pregunta:
+                def __init__(self, pregunta, *respuestas):
+                    self.pregunta = pregunta;
+
+                    self.respuesta_correcta = respuestas[0];
+                    self.respuestas_incorrectas = respuestas[1:];
+                    self.respuestas = respuestas;
+                    random.shuffle(respuestas);
+
+                    self.posicion_correcta = string.ascii_lowercase[self.respuestas.index(self.respuesta_correcta)];
+
+                def __repr__(self):
+                    return f"{self.__dict__}";
+
+            def obtener_examen():
+                datos = document.getElementById("datos").value.split("\n");
+                examen = [];
+
+                try:
+                    valores = [];                
+                    for linea in datos:
+                        if linea != "":
+                            valores.append(linea);
+                        else:
+                            examen.append(pregunta(valores[0], *valores[1:]));
+                            valores = [];
+
+                    examen.append(pregunta(valores[0], *valores[1:]));     
+                except:
+                    document.getElementById("aviso").innerHTML = "Error en los datos introducidos.";
+                    document.getElementById("aviso").classList.remove("is-hidden");
+                
+                return examen;
+
+            def generar_examen(event):
+                document.getElementById("aviso").classList.add("is-hidden");
+
+                datos = obtener_examen();
+                random.shuffle(datos);
+
+                resultado = "";
+                for indice, pregunta in enumerate(datos):
+                    resultado += f"{indice + 1}. {pregunta.pregunta}\n";
+                    for indice_respuesta, respuesta in enumerate(pregunta.respuestas):
+                        resultado += f"{string.ascii_lowercase[indice_respuesta]}) {respuesta}\n";
+                    resultado += "\n";
+
+                resultado += "Respuestas:\n";
+                for indice, pregunta in enumerate(datos):
+                    resultado += f"{indice + 1}) {pregunta.posicion_correcta}\n";
+
+                document.getElementById("resultado").value = resultado;
+            
+            document["generar_examen"].bind("click", generar_examen);
+
+        </script>
+
+    </body>
+
+</html>
