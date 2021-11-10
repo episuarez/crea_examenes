@@ -30,6 +30,4 @@ def obtener_examen(tipo):
     elif tipo == "gift":
         return examen.obtener_gift();
 
-    return {"status": 200, "resultado": "sdf"};
-
-app.run(debug=True);
+    return "";
