@@ -6,46 +6,126 @@
 
         <link href="/static/bulma.min.css"  rel="stylesheet">
 
-        <script type="text/javascript" src="/static/brython.js"></script>
-        <script type="text/javascript" src="/static/brython_stdlib.js"></script>
-
-        <title>crea examenes</title>
+        <title>crea exámenes</title>
     </head>
 
-    <body onload="brython()">
-        <section class="section">
+    <body>
+        <section class="hero">
+            <div class="hero-body">
+                <p class="title">
+                    Crea exámenes
+                </p>
+                <p class="subtitle">
+                    Herramienta para profesores partiendo de la herramienta de <a href="https://twitter.com/javierfpanadero">Javier Fernández Panadero</a>. Puedes escribir los datos para tu examen y obtener un examen aleatorio en varios formatos.
+                </p>
+                <p class="subtitle">
+                    Creado por <a href="https://twitter.com/episuarez">episuarez</a>. ¡Espero que os sea útil!
+                </p>
 
-            <div class="container">
-                <h1 class="title">Crea examenes</h1>
+                <div>
+                    <p class="mb-2">La primera respuesta siempre debe de ser la correcta. Y entre cada pregunta un salto de linea.</p>
 
-                <p class="mb-2">Esta es una herramienta desarrollada para profesores, partiendo de la <a href="https://lacienciaparatodos.wordpress.com/2021/11/09/programa-para-desordenar-examenes-tipo-test/">herramienta</a> de <a href="https://twitter.com/javierfpanadero">Javier Fernández Panadero</a>, pero desplegada en web para que sea más fácil de usar para todo tipo de usuarios.</p>
+                    <p>Ejemplo de como escribir un examen:</p>
 
-                <p class="mb-5">Creado por <a href="https://twitter.com/episuarez">episuarez</a>. ¡Espero que os sea útil!</p>
+                    <pre>
+Tumba de Grant#¿Quién está enterrado en la tumba de Grant en la Ciudad de Nueva York?
+Grant
+Nadie#Esto fue cierto por 12 años, pero los restos de Grant se sepultaron en la tumba en 1897
+Napoleón#Él fue enterrado en Francia
+Churchill#Él fue enterrado en Inglaterra
+Madre Teresa#Ella fue enterrada en la India</pre>
 
-                <div class="buttons">
-                    <button id="generar_examen" class="button is-primary">Generar examen</button>
-                </div>
-
-                <div class="notification is-danger is-hidden" id="aviso"></div>
-
-                <div class="columns">
-                    <div class="column">
-                        <textarea id="datos" class="textarea has-fixed-size is-primary" placeholder="Pregunta&#10;Respuesta correcta&#10;Respuesta incorrecta&#10;Respuesta incorrecta&#10;&#10;Pregunta&#10;Respuesta correcta&#10;Respuesta incorrecta&#10;Respuesta incorrecta&#10;Respuesta incorrecta&#10;&#10;Pregunta&#10;Respuesta correcta&#10;Respuesta incorrecta" rows="25"></textarea>
-                    </div>
-                    <div class="column">
-                        <textarea id="resultado" class="textarea has-fixed-size is-info" rows="25"></textarea>
-                    </div>
+                    <!--<p class="mb-2 mt-2">Si quieres añadir una imagen en una respuesta el formato es:</p>
+                    
+                    <pre>Napoleón#Él fue enterrado en Francia#https://estaticos.muyhistoria.es/media/cache/1140x_thumb/uploads/images/pyr/54941b888c770c961fd6e002/napoleon.jpg</pre>-->
                 </div>
             </div>
+        </section>
 
+        <section class="container">
+            <div class="notification is-danger is-hidden" id="aviso"></div>
+
+            <div class="buttons">
+                <button id="obtener_examen_texto" class="button is-primary">Obtener examen en texto</button>
+                <button id="obtener_examen_gift" class="button is-primary">Obtener examen en GIFT</button>
+            </div>
+
+            <h2 class="subtitle">Escribe tu examen</h2>
+            <textarea id="datos" class="textarea is-primary" rows="15"></textarea>
+
+            <div class="is-hidden mb-5" id="GrupoResultado">
+                <h2 class="subtitle mt-4">Resultado</h2>
+                <textarea id="resultado" class="textarea is-info " rows="15"></textarea>
+            </div>
         </section>
 
         <script defer data-domain="crea-examenes.vercel.app" src="https://plausible.io/js/plausible.js"></script>
 
+        <script>
+            document.getElementById("obtener_examen_texto").addEventListener("click", function() {
+                var datos = document.getElementById("datos").value;
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "/obtener_examen/texto");
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        document.getElementById("resultado").value = xhr.responseText;
+                        document.getElementById("GrupoResultado").classList.remove("is-hidden");
+                    } else {
+                        document.getElementById("aviso").innerText = xhr.responseText;
+                        document.getElementById("aviso").classList.remove("is-hidden");
+                    }
+                };
+                xhr.send(JSON.stringify({
+                    datos: datos
+                }));
+            });
+
+            document.getElementById("obtener_examen_gift").addEventListener("click", function() {
+                var datos = document.getElementById("datos").value;
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "/obtener_examen/gift");
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        document.getElementById("resultado").value = xhr.responseText;
+                        document.getElementById("GrupoResultado").classList.remove("is-hidden");
+                    } else {
+                        document.getElementById("aviso").innerText = xhr.responseText;
+                        document.getElementById("aviso").classList.remove("is-hidden");
+                    }
+                };
+                xhr.send(JSON.stringify({
+                    datos: datos
+                }));
+            });
+        </script>
+
         <script type="text/python">
-            from browser import document
+            from browser import document, ajax
             import random
             import string
+
+            def procesar_respuesta(request):
+                datos = request.json;
+                if datos["status"] != 200:
+                    document.getElementById("aviso").innerHTML = datos["error"];
+                    document.getElementById("aviso").classList.remove("is-hidden");
+                else:
+                    document.getElementById("resultado").value = datos["resultado"];
+                    document.getElementById("GrupoResultado").classList.remove("is-hidden");
+
+            def obtener_examen_texto(event):
+                document.getElementById("aviso").classList.add("is-hidden");
+
+                respuesta = ajax.ajax();
+                respuesta.bind("complete", procesar_respuesta);
+                respuesta.open("GET", "obtener_examen/texto", True);
+                respuesta.set_header("Accept", "application/json; charset=UTF-8");
+                respuesta.set_header("Content-Type", "application/json; charset=UTF-8");
+                respuesta.send({"datos": document["datos"].value});
+
+            document["obtener_examen_texto"].bind("click", obtener_examen_texto);
             
             class pregunta:
                 def __init__(self, pregunta, *respuestas):
@@ -99,8 +179,6 @@
                     resultado += f"{indice + 1}) {pregunta.posicion_correcta}\n";
 
                 document.getElementById("resultado").value = resultado;
-            
-            document["generar_examen"].bind("click", generar_examen);
 
         </script>
 
